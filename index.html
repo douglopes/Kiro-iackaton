@@ -646,7 +646,7 @@
             <button class="btn btn-success" onclick="showRanking()" id="btn-ranking" style="display:none;">
                 📊 Ver Ranking
             </button>
-            <button class="btn btn-secondary" onclick="showScreen('screen-admin'); renderAdminProjects();">
+            <button class="btn btn-secondary" onclick="accessAdmin()">
                 ⚙️ Gerenciar Projetos
             </button>
         </div>
@@ -735,10 +735,8 @@
 
     <script>
         // ============ CONFIG ============
-        // Para criar sua própria sessão: acesse https://www.npoint.io, clique "Create JSON Bin",
-        // cole: {"projects":[],"evaluations":{}}
-        // Copie o ID da URL (ex: abc123def456) e coloque aqui ou na URL como #ID
         const DEFAULT_BIN_ID = 'df57f172f003400cf250';
+        const ADMIN_PASSWORD = 'kiro2026'; // Altere esta senha!
 
         // ============ CRITERIA ============
         const CRITERIA = [
@@ -1080,6 +1078,16 @@
         }
 
         // ============ ADMIN - CADASTRO ============
+        function accessAdmin() {
+            const pwd = prompt("Digite a senha de administrador:");
+            if (pwd === ADMIN_PASSWORD) {
+                showScreen('screen-admin');
+                renderAdminProjects();
+            } else if (pwd !== null) {
+                showToast("Senha incorreta");
+            }
+        }
+
         async function createProject() {
             const title = document.getElementById('project-title').value.trim();
             const participant = document.getElementById('project-participant').value.trim();
