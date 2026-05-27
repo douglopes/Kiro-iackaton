@@ -45,13 +45,17 @@
             display: block;
         }
 
+        .login-screen.active {
+            display: flex;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* Login Screen */
-        .login-screen {
+        .login-screen.active {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -643,7 +647,7 @@
                 📊 Ver Ranking
             </button>
             <button class="btn btn-secondary" onclick="showScreen('screen-admin'); renderAdminProjects();">
-                ⚙️ Cadastrar Projetos
+                ⚙️ Gerenciar Projetos
             </button>
         </div>
     </div>
