@@ -643,8 +643,11 @@
         <div id="projects-list"></div>
 
         <div class="actions-bar">
-            <button class="btn btn-success" onclick="showRanking()" id="btn-ranking" style="display:none;">
-                📊 Ver Ranking
+            <button class="btn btn-success" onclick="showMyRanking()" id="btn-ranking" style="display:none;">
+                📊 Meu Ranking
+            </button>
+            <button class="btn btn-primary" onclick="accessGeneralRanking()">
+                🏆 Ranking Geral
             </button>
             <button class="btn btn-secondary" onclick="accessAdmin()">
                 ⚙️ Gerenciar Projetos
@@ -679,21 +682,38 @@
         </button>
     </div>
 
-    <!-- Screen 4: Ranking -->
+    <!-- Screen 4: My Ranking -->
     <div id="screen-ranking" class="screen">
         <div class="header">
             <div class="header-left">
                 <button class="header-back" onclick="showScreen('screen-projects')">←</button>
-                <span class="header-title">📊 Ranking</span>
+                <span class="header-title">📊 Meu Ranking</span>
             </div>
         </div>
 
         <div class="projects-header">
-            <h1>Ranking Final</h1>
-            <p>Classificação baseada nas notas ponderadas</p>
+            <h1>Meu Ranking</h1>
+            <p>Classificação baseada nas suas notas</p>
         </div>
 
         <div id="ranking-list"></div>
+    </div>
+
+    <!-- Screen 6: General Ranking (protected) -->
+    <div id="screen-general-ranking" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="showScreen('screen-projects')">←</button>
+                <span class="header-title">🏆 Ranking Geral</span>
+            </div>
+        </div>
+
+        <div class="projects-header">
+            <h1>Ranking Geral</h1>
+            <p>Média ponderada de todos os avaliadores</p>
+        </div>
+
+        <div id="general-ranking-list"></div>
     </div>
 
     <!-- Screen 5: Admin - Cadastro de Projetos -->
@@ -1033,9 +1053,55 @@
         }
 
         // ============ RANKING ============
-        async function showRanking() {
-            await loadCloud(); // get latest evaluations from all users
+        function showMyRanking() {
             const container = document.getElementById('ranking-list');
+            container.innerHTML = '';
+            const PROJECTS = getProjects();
+
+            const ranked = PROJECTS
+                .filter(p => evaluations[p.id])
+                .map(p => ({
+                    ...p,
+                    score: calculateWeightedScore(evaluations[p.id])
+                }))
+                .sort((a, b) => b.score - a.score);
+
+            if (ranked.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 40px;">Você ainda não avaliou nenhum projeto.</p>';
+                showScreen('screen-ranking');
+                return;
+            }
+
+            ranked.forEach((project, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const card = document.createElement('div');
+                card.className = 'summary-card';
+                card.innerHTML = `
+                    <div class="summary-rank ${rankClass}">${index + 1}°</div>
+                    <div class="summary-info">
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>${escHtml(project.participant)}</span>
+                    </div>
+                    <div class="summary-score">${project.score.toFixed(1)}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            showScreen('screen-ranking');
+        }
+
+        function accessGeneralRanking() {
+            const pwd = prompt("Digite a senha para ver o ranking geral:");
+            if (pwd === ADMIN_PASSWORD) {
+                showGeneralRanking();
+            } else if (pwd !== null) {
+                showToast("Senha incorreta");
+            }
+        }
+
+        async function showGeneralRanking() {
+            await loadCloud(); // get latest evaluations from all users
+            const container = document.getElementById('general-ranking-list');
             container.innerHTML = '';
             const PROJECTS = getProjects();
             const allEvals = cloudData.evaluations || {};
@@ -1059,6 +1125,12 @@
             .filter(p => p.evalCount > 0)
             .sort((a, b) => b.score - a.score);
 
+            if (ranked.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 40px;">Nenhuma avaliação registrada ainda.</p>';
+                showScreen('screen-general-ranking');
+                return;
+            }
+
             ranked.forEach((project, index) => {
                 const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
                 const card = document.createElement('div');
@@ -1074,7 +1146,7 @@
                 container.appendChild(card);
             });
 
-            showScreen('screen-ranking');
+            showScreen('screen-general-ranking');
         }
 
         // ============ ADMIN - CADASTRO ============
