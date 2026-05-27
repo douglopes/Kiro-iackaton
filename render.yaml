@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: kiro-hackathon
+    runtime: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node index.js
+    envVars:
+      - key: PORT
+        value: 3000

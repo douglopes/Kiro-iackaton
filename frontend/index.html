@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kiro Hackathon - Avaliação</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #5A52D5;
+            --secondary: #FF6584;
+            --bg: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text: #2D3748;
+            --text-light: #718096;
+            --success: #48BB78;
+            --warning: #ECC94B;
+            --border: #E2E8F0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .login-screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Login Screen */
+        .login-screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, #4834d4 100%);
+            padding: 30px;
+        }
+
+        .login-logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .login-title {
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--text);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            margin: -20px -20px 20px -20px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-back {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            color: var(--text);
+        }
+
+        .header-back:hover {
+            background: var(--bg);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .header-user {
+            font-size: 13px;
+            color: var(--text-light);
+            background: var(--bg);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* Projects List */
+        .projects-header {
+            margin-bottom: 20px;
+        }
+
+        .projects-header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .projects-header p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid var(--primary);
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .project-card.evaluated {
+            border-left-color: var(--success);
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .project-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .project-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .badge-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-done {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .project-card p {
+            font-size: 14px;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .project-card .participant {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Evaluation Screen */
+        .eval-project-info {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .eval-project-info h2 {
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .eval-project-info .participant {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .eval-project-info p {
+            color: var(--text-light);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .criteria-section {
+            margin-bottom: 20px;
+        }
+
+        .criteria-section h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .criteria-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .criteria-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .criteria-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .criteria-weight {
+            font-size: 12px;
+            color: var(--text-light);
+            background: var(--bg);
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        .criteria-score {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .score-btn {
+            width: 38px;
+            height: 38px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text);
+        }
+
+        .score-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .score-btn.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .final-score {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .final-score h3 {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .final-score .score-value {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .final-score .score-max {
+            font-size: 16px;
+            color: var(--text-light);
+        }
+
+        /* Summary / Rankings */
+        .summary-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .summary-rank {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .summary-rank.gold { background: #F59E0B; }
+        .summary-rank.silver { background: #9CA3AF; }
+        .summary-rank.bronze { background: #D97706; }
+
+        .summary-info {
+            flex: 1;
+        }
+
+        .summary-info h4 {
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .summary-info span {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .summary-score {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background: var(--border);
+            height: 6px;
+            border-radius: 3px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1a202c;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Admin */
+        .admin-form {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .input-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            outline: none;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .input-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-secondary {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--text);
+        }
+
+        .btn-danger {
+            background: #E53E3E;
+            color: white;
+            padding: 8px 14px;
+            font-size: 13px;
+            width: auto;
+            border-radius: 8px;
+        }
+
+        .admin-project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-project-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .admin-project-info span {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .actions-bar .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Screen 1: Login -->
+    <div id="screen-login" class="screen login-screen active">
+        <div class="login-logo">🏆</div>
+        <h1 class="login-title">Kiro Hackathon</h1>
+        <p class="login-subtitle">Sistema de Avaliação de Projetos</p>
+        <div class="login-card">
+            <h2>Bem-vindo, Avaliador!</h2>
+            <div class="input-group">
+                <label>Seu nome completo</label>
+                <input type="text" id="evaluator-name" placeholder="Digite seu nome..." autocomplete="off">
+            </div>
+            <button class="btn btn-primary" onclick="login()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Screen 2: Projects List -->
+    <div id="screen-projects" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <span class="header-title">🏆 Projetos</span>
+            </div>
+            <span class="header-user" id="header-username"></span>
+        </div>
+
+        <div class="projects-header">
+            <h1>Projetos para Avaliar</h1>
+            <p id="progress-text">0 de 0 avaliados</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="filterProjects('all')">Todos</button>
+            <button class="tab-btn" onclick="filterProjects('pending')">Pendentes</button>
+            <button class="tab-btn" onclick="filterProjects('done')">Avaliados</button>
+        </div>
+
+        <div id="projects-list"></div>
+
+        <div class="actions-bar">
+            <button class="btn btn-success" onclick="showMyRanking()" id="btn-ranking" style="display:none;">
+                📊 Meu Ranking
+            </button>
+            <button class="btn btn-primary" onclick="accessGeneralRanking()">
+                🏆 Ranking Geral
+            </button>
+            <button class="btn btn-secondary" onclick="accessAdmin()">
+                ⚙️ Gerenciar Projetos
+            </button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Evaluation -->
+    <div id="screen-eval" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="goBack()">←</button>
+                <span class="header-title">Avaliar</span>
+            </div>
+        </div>
+
+        <div class="eval-project-info" id="eval-project-info"></div>
+
+        <div class="criteria-section">
+            <h3>Critérios de Avaliação (1 a 10)</h3>
+            <div id="criteria-list"></div>
+        </div>
+
+        <div class="final-score">
+            <h3>Nota Final Ponderada</h3>
+            <span class="score-value" id="final-score-value">0.0</span>
+            <span class="score-max">/ 10.0</span>
+        </div>
+
+        <button class="btn btn-primary" onclick="submitEvaluation()" id="btn-submit">
+            Salvar Avaliação
+        </button>
+    </div>
+
+    <!-- Screen 4: My Ranking -->
+    <div id="screen-ranking" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="showScreen('screen-projects')">←</button>
+                <span class="header-title">📊 Meu Ranking</span>
+            </div>
+        </div>
+
+        <div class="projects-header">
+            <h1>Meu Ranking</h1>
+            <p>Classificação baseada nas suas notas</p>
+        </div>
+
+        <div id="ranking-list"></div>
+    </div>
+
+    <!-- Screen 6: General Ranking (protected) -->
+    <div id="screen-general-ranking" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="showScreen('screen-projects')">←</button>
+                <span class="header-title">🏆 Ranking Geral</span>
+            </div>
+        </div>
+
+        <div class="projects-header">
+            <h1>Ranking Geral</h1>
+            <p>Média ponderada de todos os avaliadores</p>
+        </div>
+
+        <div id="general-ranking-list"></div>
+    </div>
+
+    <!-- Screen 5: Admin - Cadastro de Projetos -->
+    <div id="screen-admin" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="goBack()">←</button>
+                <span class="header-title">⚙️ Cadastrar Projetos</span>
+            </div>
+        </div>
+
+        <div class="projects-header">
+            <h1>Novo Projeto</h1>
+            <p>Adicione os projetos que serão avaliados</p>
+        </div>
+
+        <div class="admin-form">
+            <div class="input-group">
+                <label>Título do Projeto</label>
+                <input type="text" id="project-title" placeholder="Nome do projeto...">
+            </div>
+            <div class="input-group">
+                <label>Nome do Participante</label>
+                <input type="text" id="project-participant" placeholder="Quem apresentou...">
+            </div>
+            <div class="input-group">
+                <label>Descrição</label>
+                <textarea id="project-description" placeholder="Descreva o que o projeto faz..." rows="4"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="createProject()">Cadastrar Projeto</button>
+        </div>
+
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Projetos Cadastrados (<span id="admin-count">0</span>)</h3>
+        <div id="admin-projects-list"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============ CONFIG ============
+        const API_URL = '/api/data';
+        const ADMIN_PASSWORD = 'kiro2026'; // Altere esta senha!
+
+        // ============ CRITERIA ============
+        const CRITERIA = [
+            { id: "impacto", name: "Impacto no negócio", weight: 0.30 },
+            { id: "uso_kiro", name: "Uso efetivo do Kiro no desenvolvimento", weight: 0.25 },
+            { id: "viabilidade", name: "Viabilidade de implementação", weight: 0.20 },
+            { id: "inovacao", name: "Inovação e criatividade", weight: 0.15 },
+            { id: "apresentacao", name: "Qualidade da apresentação", weight: 0.10 }
+        ];
+
+        // ============ STATE ============
+        let currentUser = "";
+        let currentProjectId = null;
+        let evaluations = {};
+        let currentScores = {};
+        let cloudData = { projects: [], evaluations: {} };
+
+        // ============ CLOUD SYNC (backend API) ============
+        async function loadCloud() {
+            try {
+                const res = await fetch(API_URL);
+                if (res.ok) {
+                    cloudData = await res.json();
+                    if (!cloudData.projects) cloudData.projects = [];
+                    if (!cloudData.evaluations) cloudData.evaluations = {};
+                    return true;
+                }
+            } catch (e) {
+                console.error('Erro ao carregar dados:', e);
+            }
+            return false;
+        }
+
+        async function saveCloud() {
+            try {
+                await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cloudData)
+                });
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+                showToast("Erro ao salvar. Tente novamente.");
+            }
+        }
+
+        function loadLocalFallback() {
+            // not needed with backend
+        }
+
+        function getProjects() {
+            return cloudData.projects || [];
+        }
+
+        function getMyEvaluations() {
+            return (cloudData.evaluations && cloudData.evaluations[currentUser]) || {};
+        }
+
+        // ============ NAVIGATION ============
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function goBack() {
+            showScreen('screen-projects');
+            renderProjectsList('all');
+        }
+
+        // ============ LOGIN ============
+        async function login() {
+            const name = document.getElementById('evaluator-name').value.trim();
+            if (!name) {
+                showToast("Por favor, digite seu nome");
+                return;
+            }
+            currentUser = name;
+            document.getElementById('header-username').textContent = name;
+
+            const loaded = await loadCloud();
+            if (!loaded) {
+                showToast("Erro ao conectar. Tente novamente.");
+                return;
+            }
+
+            evaluations = getMyEvaluations();
+            showScreen('screen-projects');
+            renderProjectsList('all');
+        }
+
+        document.getElementById('evaluator-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
+
+        // ============ PROJECTS LIST ============
+        function renderProjectsList(filter) {
+            const container = document.getElementById('projects-list');
+            container.innerHTML = '';
+            const PROJECTS = getProjects();
+
+            if (PROJECTS.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 40px 20px; color: var(--text-light);"><p style="font-size: 40px; margin-bottom: 12px;">📋</p><p>Nenhum projeto cadastrado ainda.</p><p style="margin-top: 8px;">Use o botão <b>⚙️ Cadastrar Projetos</b> abaixo.</p></div>';
+                updateProgress();
+                return;
+            }
+
+            let projects = PROJECTS;
+            if (filter === 'pending') {
+                projects = PROJECTS.filter(p => !evaluations[p.id]);
+            } else if (filter === 'done') {
+                projects = PROJECTS.filter(p => evaluations[p.id]);
+            }
+
+            projects.forEach(project => {
+                const isEvaluated = !!evaluations[project.id];
+                const score = isEvaluated ? calculateWeightedScore(evaluations[project.id]) : null;
+
+                const card = document.createElement('div');
+                card.className = `project-card ${isEvaluated ? 'evaluated' : ''}`;
+                card.onclick = () => openEvaluation(project.id);
+                card.innerHTML = `
+                    <div class="project-card-header">
+                        <h3>${escHtml(project.title)}</h3>
+                        <span class="project-badge ${isEvaluated ? 'badge-done' : 'badge-pending'}">
+                            ${isEvaluated ? '✓ ' + score.toFixed(1) : 'Pendente'}
+                        </span>
+                    </div>
+                    <p>${escHtml(project.description)}</p>
+                    <div class="participant">👤 ${escHtml(project.participant)}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            updateProgress();
+        }
+
+        function filterProjects(filter) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderProjectsList(filter);
+        }
+
+        function updateProgress() {
+            const PROJECTS = getProjects();
+            const total = PROJECTS.length;
+            const done = PROJECTS.filter(p => evaluations[p.id]).length;
+            document.getElementById('progress-text').textContent = `${done} de ${total} avaliados`;
+            document.getElementById('progress-fill').style.width = total > 0 ? `${(done / total) * 100}%` : '0%';
+            document.getElementById('btn-ranking').style.display = done > 0 ? 'block' : 'none';
+        }
+
+        // ============ EVALUATION ============
+        function openEvaluation(projectId) {
+            currentProjectId = projectId;
+            const PROJECTS = getProjects();
+            const project = PROJECTS.find(p => p.id === projectId);
+            if (!project) return;
+
+            document.getElementById('eval-project-info').innerHTML = `
+                <h2>${escHtml(project.title)}</h2>
+                <div class="participant">👤 ${escHtml(project.participant)}</div>
+                <p style="margin-top: 8px;">${escHtml(project.description)}</p>
+            `;
+
+            currentScores = evaluations[projectId] ? { ...evaluations[projectId] } : {};
+
+            const container = document.getElementById('criteria-list');
+            container.innerHTML = '';
+
+            CRITERIA.forEach(criteria => {
+                const card = document.createElement('div');
+                card.className = 'criteria-card';
+                card.innerHTML = `
+                    <div class="criteria-header">
+                        <span class="criteria-name">${criteria.name}</span>
+                        <span class="criteria-weight">Peso: ${(criteria.weight * 100)}%</span>
+                    </div>
+                    <div class="criteria-score" id="score-${criteria.id}">
+                        ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+                            <button class="score-btn ${currentScores[criteria.id] === n ? 'selected' : ''}" 
+                                    onclick="setScore('${criteria.id}', ${n})">
+                                ${n}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            updateFinalScore();
+            showScreen('screen-eval');
+        }
+
+        function setScore(criteriaId, value) {
+            currentScores[criteriaId] = value;
+            const container = document.getElementById(`score-${criteriaId}`);
+            container.querySelectorAll('.score-btn').forEach((btn, idx) => {
+                btn.classList.toggle('selected', idx + 1 === value);
+            });
+            updateFinalScore();
+        }
+
+        function calculateWeightedScore(scores) {
+            let total = 0;
+            CRITERIA.forEach(c => {
+                if (scores[c.id]) {
+                    total += scores[c.id] * c.weight;
+                }
+            });
+            return total;
+        }
+
+        function updateFinalScore() {
+            const score = calculateWeightedScore(currentScores);
+            document.getElementById('final-score-value').textContent = score.toFixed(1);
+        }
+
+        async function submitEvaluation() {
+            const allScored = CRITERIA.every(c => currentScores[c.id]);
+            if (!allScored) {
+                showToast("Avalie todos os critérios antes de salvar");
+                return;
+            }
+
+            evaluations[currentProjectId] = { ...currentScores };
+
+            // Save to cloud
+            await loadCloud(); // refresh first to avoid overwriting others
+            if (!cloudData.evaluations) cloudData.evaluations = {};
+            cloudData.evaluations[currentUser] = evaluations;
+            await saveCloud();
+
+            showToast("Avaliação salva com sucesso! ✓");
+            setTimeout(() => { goBack(); }, 1000);
+        }
+
+        // ============ RANKING ============
+        function showMyRanking() {
+            const container = document.getElementById('ranking-list');
+            container.innerHTML = '';
+            const PROJECTS = getProjects();
+
+            const ranked = PROJECTS
+                .filter(p => evaluations[p.id])
+                .map(p => ({
+                    ...p,
+                    score: calculateWeightedScore(evaluations[p.id])
+                }))
+                .sort((a, b) => b.score - a.score);
+
+            if (ranked.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 40px;">Você ainda não avaliou nenhum projeto.</p>';
+                showScreen('screen-ranking');
+                return;
+            }
+
+            ranked.forEach((project, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const card = document.createElement('div');
+                card.className = 'summary-card';
+                card.innerHTML = `
+                    <div class="summary-rank ${rankClass}">${index + 1}°</div>
+                    <div class="summary-info">
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>${escHtml(project.participant)}</span>
+                    </div>
+                    <div class="summary-score">${project.score.toFixed(1)}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            showScreen('screen-ranking');
+        }
+
+        function accessGeneralRanking() {
+            const pwd = prompt("Digite a senha para ver o ranking geral:");
+            if (pwd === ADMIN_PASSWORD) {
+                showGeneralRanking();
+            } else if (pwd !== null) {
+                showToast("Senha incorreta");
+            }
+        }
+
+        async function showGeneralRanking() {
+            await loadCloud(); // get latest evaluations from all users
+            const container = document.getElementById('general-ranking-list');
+            container.innerHTML = '';
+            const PROJECTS = getProjects();
+            const allEvals = cloudData.evaluations || {};
+
+            // Calculate average scores across all evaluators
+            const ranked = PROJECTS.map(p => {
+                let totalScore = 0;
+                let evalCount = 0;
+                Object.values(allEvals).forEach(userEvals => {
+                    if (userEvals[p.id]) {
+                        totalScore += calculateWeightedScore(userEvals[p.id]);
+                        evalCount++;
+                    }
+                });
+                return {
+                    ...p,
+                    score: evalCount > 0 ? totalScore / evalCount : 0,
+                    evalCount
+                };
+            })
+            .filter(p => p.evalCount > 0)
+            .sort((a, b) => b.score - a.score);
+
+            if (ranked.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 40px;">Nenhuma avaliação registrada ainda.</p>';
+                showScreen('screen-general-ranking');
+                return;
+            }
+
+            ranked.forEach((project, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const card = document.createElement('div');
+                card.className = 'summary-card';
+                card.innerHTML = `
+                    <div class="summary-rank ${rankClass}">${index + 1}°</div>
+                    <div class="summary-info">
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>${escHtml(project.participant)} · ${project.evalCount} voto(s)</span>
+                    </div>
+                    <div class="summary-score">${project.score.toFixed(1)}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            showScreen('screen-general-ranking');
+        }
+
+        // ============ ADMIN - CADASTRO ============
+        function accessAdmin() {
+            const pwd = prompt("Digite a senha de administrador:");
+            if (pwd === ADMIN_PASSWORD) {
+                showScreen('screen-admin');
+                renderAdminProjects();
+            } else if (pwd !== null) {
+                showToast("Senha incorreta");
+            }
+        }
+
+        async function createProject() {
+            const title = document.getElementById('project-title').value.trim();
+            const participant = document.getElementById('project-participant').value.trim();
+            const description = document.getElementById('project-description').value.trim();
+
+            if (!title || !participant || !description) {
+                showToast("Preencha todos os campos");
+                return;
+            }
+
+            await loadCloud(); // refresh
+            const projects = cloudData.projects || [];
+            const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
+            projects.push({ id: newId, title, description, participant });
+            cloudData.projects = projects;
+            await saveCloud();
+
+            document.getElementById('project-title').value = '';
+            document.getElementById('project-participant').value = '';
+            document.getElementById('project-description').value = '';
+
+            showToast("Projeto cadastrado com sucesso! ✓");
+            renderAdminProjects();
+        }
+
+        async function deleteProject(id) {
+            if (!confirm("Excluir este projeto?")) return;
+            await loadCloud();
+            cloudData.projects = (cloudData.projects || []).filter(p => p.id !== id);
+            await saveCloud();
+            showToast("Projeto excluído");
+            renderAdminProjects();
+        }
+
+        function renderAdminProjects() {
+            const projects = getProjects();
+            const container = document.getElementById('admin-projects-list');
+            document.getElementById('admin-count').textContent = projects.length;
+            container.innerHTML = '';
+
+            if (projects.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 20px;">Nenhum projeto cadastrado</p>';
+                return;
+            }
+
+            projects.forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'admin-project-card';
+                card.innerHTML = `
+                    <div class="admin-project-info">
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>👤 ${escHtml(project.participant)}</span>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteProject(${project.id})">Excluir</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ============ UTILS ============
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function escHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+    </script>
+</body>
+</html>
