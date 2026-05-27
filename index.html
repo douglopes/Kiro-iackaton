@@ -731,7 +731,10 @@
 
     <script>
         // ============ CONFIG ============
-        const BLOB_API = 'https://jsonblob.com/api/jsonBlob';
+        // Para criar sua própria sessão: acesse https://www.npoint.io, clique "Create JSON Bin",
+        // cole: {"projects":[],"evaluations":{}}
+        // Copie o ID da URL (ex: abc123def456) e coloque aqui ou na URL como #ID
+        const DEFAULT_BIN_ID = ''; // cole o ID do npoint aqui se quiser fixar
 
         // ============ CRITERIA ============
         const CRITERIA = [
@@ -750,48 +753,72 @@
         let blobId = null;
         let cloudData = { projects: [], evaluations: {} };
 
-        // ============ CLOUD SYNC (jsonblob.com) ============
+        // ============ CLOUD SYNC (npoint.io) ============
         async function createBlob() {
-            const res = await fetch(BLOB_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ projects: [], evaluations: {} })
-            });
-            const location = res.headers.get('Location') || res.headers.get('location');
-            if (location) {
-                return location.split('/').pop();
+            try {
+                const res = await fetch('https://api.npoint.io', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: JSON.stringify({ projects: [], evaluations: {} }) })
+                });
+                if (res.ok) {
+                    const text = await res.text();
+                    try {
+                        const data = JSON.parse(text);
+                        if (data && data.api_url) {
+                            return data.api_url.split('/').pop();
+                        }
+                    } catch(e) {}
+                }
+                return null;
+            } catch (e) {
+                console.error('Erro ao criar sessão:', e);
+                return null;
             }
-            const data = await res.json();
-            return null;
         }
 
         async function loadCloud() {
-            if (!blobId) return;
+            if (!blobId) return false;
             try {
-                const res = await fetch(`${BLOB_API}/${blobId}`, {
-                    headers: { 'Accept': 'application/json' }
-                });
+                const res = await fetch(`https://api.npoint.io/${blobId}`);
                 if (res.ok) {
                     cloudData = await res.json();
                     if (!cloudData.projects) cloudData.projects = [];
                     if (!cloudData.evaluations) cloudData.evaluations = {};
+                    return true;
                 }
             } catch (e) {
                 console.error('Erro ao carregar dados:', e);
             }
+            return false;
         }
 
         async function saveCloud() {
-            if (!blobId) return;
+            if (!blobId) {
+                // Fallback: save locally
+                localStorage.setItem('kiro_hackathon_cloud', JSON.stringify(cloudData));
+                return;
+            }
             try {
-                await fetch(`${BLOB_API}/${blobId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                await fetch(`https://api.npoint.io/${blobId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
                 });
             } catch (e) {
                 console.error('Erro ao salvar dados:', e);
-                showToast("Erro ao sincronizar. Tente novamente.");
+                // Fallback local
+                localStorage.setItem('kiro_hackathon_cloud', JSON.stringify(cloudData));
+                showToast("Salvo localmente (sem conexão)");
+            }
+        }
+
+        function loadLocalFallback() {
+            const raw = localStorage.getItem('kiro_hackathon_cloud');
+            if (raw) {
+                cloudData = JSON.parse(raw);
+                if (!cloudData.projects) cloudData.projects = [];
+                if (!cloudData.evaluations) cloudData.evaluations = {};
             }
         }
 
@@ -824,22 +851,34 @@
             currentUser = name;
             document.getElementById('header-username').textContent = name;
 
-            // Check if blob exists in URL hash
+            // Check if blob exists in URL hash or DEFAULT
             const hash = window.location.hash.substring(1);
             if (hash) {
                 blobId = hash;
+            } else if (DEFAULT_BIN_ID) {
+                blobId = DEFAULT_BIN_ID;
+                window.location.hash = blobId;
             } else {
-                // Create new blob
+                // Try to create new blob
                 showToast("Criando sessão...");
                 blobId = await createBlob();
                 if (blobId) {
                     window.location.hash = blobId;
+                    showToast("Sessão criada! Compartilhe o link.");
                 } else {
-                    showToast("Erro ao criar sessão. Usando modo local.");
+                    // Fallback to local storage
+                    showToast("Usando modo local");
+                    loadLocalFallback();
                 }
             }
 
-            await loadCloud();
+            if (blobId) {
+                const loaded = await loadCloud();
+                if (!loaded) {
+                    loadLocalFallback();
+                }
+            }
+
             evaluations = getMyEvaluations();
             showScreen('screen-projects');
             renderProjectsList('all');
