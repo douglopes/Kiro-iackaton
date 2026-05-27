@@ -518,6 +518,82 @@
         .toast.show {
             transform: translateX(-50%) translateY(0);
         }
+
+        /* Admin */
+        .admin-form {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .input-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            outline: none;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .input-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-secondary {
+            background: var(--text-light);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--text);
+        }
+
+        .btn-danger {
+            background: #E53E3E;
+            color: white;
+            padding: 8px 14px;
+            font-size: 13px;
+            width: auto;
+            border-radius: 8px;
+        }
+
+        .admin-project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-project-info h4 {
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .admin-project-info span {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .actions-bar .btn {
+            flex: 1;
+            min-width: 140px;
+        }
     </style>
 </head>
 <body>
@@ -562,9 +638,12 @@
 
         <div id="projects-list"></div>
 
-        <div style="margin-top: 20px;">
+        <div class="actions-bar">
             <button class="btn btn-success" onclick="showRanking()" id="btn-ranking" style="display:none;">
-                📊 Ver Ranking Final
+                📊 Ver Ranking
+            </button>
+            <button class="btn btn-secondary" onclick="showScreen('screen-admin'); renderAdminProjects();">
+                ⚙️ Cadastrar Projetos
             </button>
         </div>
     </div>
@@ -613,44 +692,45 @@
         <div id="ranking-list"></div>
     </div>
 
+    <!-- Screen 5: Admin - Cadastro de Projetos -->
+    <div id="screen-admin" class="screen">
+        <div class="header">
+            <div class="header-left">
+                <button class="header-back" onclick="goBack()">←</button>
+                <span class="header-title">⚙️ Cadastrar Projetos</span>
+            </div>
+        </div>
+
+        <div class="projects-header">
+            <h1>Novo Projeto</h1>
+            <p>Adicione os projetos que serão avaliados</p>
+        </div>
+
+        <div class="admin-form">
+            <div class="input-group">
+                <label>Título do Projeto</label>
+                <input type="text" id="project-title" placeholder="Nome do projeto...">
+            </div>
+            <div class="input-group">
+                <label>Nome do Participante</label>
+                <input type="text" id="project-participant" placeholder="Quem apresentou...">
+            </div>
+            <div class="input-group">
+                <label>Descrição</label>
+                <textarea id="project-description" placeholder="Descreva o que o projeto faz..." rows="4"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="createProject()">Cadastrar Projeto</button>
+        </div>
+
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Projetos Cadastrados (<span id="admin-count">0</span>)</h3>
+        <div id="admin-projects-list"></div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-        // ============ DATA ============
-        const PROJECTS = [
-            {
-                id: 1,
-                title: "Projeto Exemplo 1",
-                description: "Descrição do primeiro projeto submetido no hackathon. Explique aqui o que o projeto faz e qual problema resolve.",
-                participant: "Participante 1"
-            },
-            {
-                id: 2,
-                title: "Projeto Exemplo 2",
-                description: "Descrição do segundo projeto submetido no hackathon. Explique aqui o que o projeto faz e qual problema resolve.",
-                participant: "Participante 2"
-            },
-            {
-                id: 3,
-                title: "Projeto Exemplo 3",
-                description: "Descrição do terceiro projeto submetido no hackathon. Explique aqui o que o projeto faz e qual problema resolve.",
-                participant: "Participante 3"
-            },
-            {
-                id: 4,
-                title: "Projeto Exemplo 4",
-                description: "Descrição do quarto projeto submetido no hackathon. Explique aqui o que o projeto faz e qual problema resolve.",
-                participant: "Participante 4"
-            },
-            {
-                id: 5,
-                title: "Projeto Exemplo 5",
-                description: "Descrição do quinto projeto submetido no hackathon. Explique aqui o que o projeto faz e qual problema resolve.",
-                participant: "Participante 5"
-            }
-        ];
-
+        // ============ CRITERIA ============
         const CRITERIA = [
             { id: "impacto", name: "Impacto no negócio", weight: 0.30 },
             { id: "uso_kiro", name: "Uso efetivo do Kiro no desenvolvimento", weight: 0.25 },
@@ -665,14 +745,24 @@
         let evaluations = {};
         let currentScores = {};
 
-        // ============ PERSISTENCE ============
+        // ============ PROJECTS STORAGE (shared) ============
+        function getProjects() {
+            const raw = localStorage.getItem('kiro_hackathon_projects');
+            return raw ? JSON.parse(raw) : [];
+        }
+
+        function saveProjects(projects) {
+            localStorage.setItem('kiro_hackathon_projects', JSON.stringify(projects));
+        }
+
+        // ============ PERSISTENCE (per evaluator) ============
         function saveData() {
             const data = { evaluations };
-            localStorage.setItem(`kiro_hackathon_${currentUser}`, JSON.stringify(data));
+            localStorage.setItem(`kiro_hackathon_eval_${currentUser}`, JSON.stringify(data));
         }
 
         function loadData() {
-            const raw = localStorage.getItem(`kiro_hackathon_${currentUser}`);
+            const raw = localStorage.getItem(`kiro_hackathon_eval_${currentUser}`);
             if (raw) {
                 const data = JSON.parse(raw);
                 evaluations = data.evaluations || {};
@@ -706,7 +796,6 @@
             renderProjectsList('all');
         }
 
-        // Enter key support
         document.getElementById('evaluator-name').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') login();
         });
@@ -715,6 +804,13 @@
         function renderProjectsList(filter) {
             const container = document.getElementById('projects-list');
             container.innerHTML = '';
+            const PROJECTS = getProjects();
+
+            if (PROJECTS.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 40px 20px; color: var(--text-light);"><p style="font-size: 40px; margin-bottom: 12px;">📋</p><p>Nenhum projeto cadastrado ainda.</p><p style="margin-top: 8px;">Use o botão <b>⚙️ Cadastrar Projetos</b> abaixo.</p></div>';
+                updateProgress();
+                return;
+            }
 
             let projects = PROJECTS;
             if (filter === 'pending') {
@@ -732,13 +828,13 @@
                 card.onclick = () => openEvaluation(project.id);
                 card.innerHTML = `
                     <div class="project-card-header">
-                        <h3>${project.title}</h3>
+                        <h3>${escHtml(project.title)}</h3>
                         <span class="project-badge ${isEvaluated ? 'badge-done' : 'badge-pending'}">
                             ${isEvaluated ? '✓ ' + score.toFixed(1) : 'Pendente'}
                         </span>
                     </div>
-                    <p>${project.description}</p>
-                    <div class="participant">👤 ${project.participant}</div>
+                    <p>${escHtml(project.description)}</p>
+                    <div class="participant">👤 ${escHtml(project.participant)}</div>
                 `;
                 container.appendChild(card);
             });
@@ -753,31 +849,29 @@
         }
 
         function updateProgress() {
+            const PROJECTS = getProjects();
             const total = PROJECTS.length;
             const done = PROJECTS.filter(p => evaluations[p.id]).length;
             document.getElementById('progress-text').textContent = `${done} de ${total} avaliados`;
-            document.getElementById('progress-fill').style.width = `${(done / total) * 100}%`;
-
-            // Show ranking button if all evaluated
+            document.getElementById('progress-fill').style.width = total > 0 ? `${(done / total) * 100}%` : '0%';
             document.getElementById('btn-ranking').style.display = done > 0 ? 'block' : 'none';
         }
 
         // ============ EVALUATION ============
         function openEvaluation(projectId) {
             currentProjectId = projectId;
+            const PROJECTS = getProjects();
             const project = PROJECTS.find(p => p.id === projectId);
+            if (!project) return;
 
-            // Set project info
             document.getElementById('eval-project-info').innerHTML = `
-                <h2>${project.title}</h2>
-                <div class="participant">👤 ${project.participant}</div>
-                <p style="margin-top: 8px;">${project.description}</p>
+                <h2>${escHtml(project.title)}</h2>
+                <div class="participant">👤 ${escHtml(project.participant)}</div>
+                <p style="margin-top: 8px;">${escHtml(project.description)}</p>
             `;
 
-            // Load existing scores or reset
             currentScores = evaluations[projectId] ? { ...evaluations[projectId] } : {};
 
-            // Render criteria
             const container = document.getElementById('criteria-list');
             container.innerHTML = '';
 
@@ -807,26 +901,21 @@
 
         function setScore(criteriaId, value) {
             currentScores[criteriaId] = value;
-
-            // Update buttons
             const container = document.getElementById(`score-${criteriaId}`);
             container.querySelectorAll('.score-btn').forEach((btn, idx) => {
                 btn.classList.toggle('selected', idx + 1 === value);
             });
-
             updateFinalScore();
         }
 
         function calculateWeightedScore(scores) {
             let total = 0;
-            let totalWeight = 0;
             CRITERIA.forEach(c => {
                 if (scores[c.id]) {
                     total += scores[c.id] * c.weight;
-                    totalWeight += c.weight;
                 }
             });
-            return totalWeight > 0 ? total : 0;
+            return total;
         }
 
         function updateFinalScore() {
@@ -835,7 +924,6 @@
         }
 
         function submitEvaluation() {
-            // Check if all criteria have scores
             const allScored = CRITERIA.every(c => currentScores[c.id]);
             if (!allScored) {
                 showToast("Avalie todos os critérios antes de salvar");
@@ -855,6 +943,7 @@
         function showRanking() {
             const container = document.getElementById('ranking-list');
             container.innerHTML = '';
+            const PROJECTS = getProjects();
 
             const ranked = PROJECTS
                 .filter(p => evaluations[p.id])
@@ -871,8 +960,8 @@
                 card.innerHTML = `
                     <div class="summary-rank ${rankClass}">${index + 1}°</div>
                     <div class="summary-info">
-                        <h4>${project.title}</h4>
-                        <span>${project.participant}</span>
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>${escHtml(project.participant)}</span>
                     </div>
                     <div class="summary-score">${project.score.toFixed(1)}</div>
                 `;
@@ -882,12 +971,76 @@
             showScreen('screen-ranking');
         }
 
-        // ============ TOAST ============
+        // ============ ADMIN - CADASTRO ============
+        function createProject() {
+            const title = document.getElementById('project-title').value.trim();
+            const participant = document.getElementById('project-participant').value.trim();
+            const description = document.getElementById('project-description').value.trim();
+
+            if (!title || !participant || !description) {
+                showToast("Preencha todos os campos");
+                return;
+            }
+
+            const projects = getProjects();
+            const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
+            projects.push({ id: newId, title, description, participant });
+            saveProjects(projects);
+
+            document.getElementById('project-title').value = '';
+            document.getElementById('project-participant').value = '';
+            document.getElementById('project-description').value = '';
+
+            showToast("Projeto cadastrado com sucesso! ✓");
+            renderAdminProjects();
+        }
+
+        function deleteProject(id) {
+            if (!confirm("Excluir este projeto?")) return;
+            let projects = getProjects();
+            projects = projects.filter(p => p.id !== id);
+            saveProjects(projects);
+            showToast("Projeto excluído");
+            renderAdminProjects();
+        }
+
+        function renderAdminProjects() {
+            const projects = getProjects();
+            const container = document.getElementById('admin-projects-list');
+            document.getElementById('admin-count').textContent = projects.length;
+            container.innerHTML = '';
+
+            if (projects.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color: var(--text-light); padding: 20px;">Nenhum projeto cadastrado</p>';
+                return;
+            }
+
+            projects.forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'admin-project-card';
+                card.innerHTML = `
+                    <div class="admin-project-info">
+                        <h4>${escHtml(project.title)}</h4>
+                        <span>👤 ${escHtml(project.participant)}</span>
+                    </div>
+                    <button class="btn btn-danger" onclick="deleteProject(${project.id})">Excluir</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ============ UTILS ============
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function escHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
         }
     </script>
 </body>
