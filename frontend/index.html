@@ -748,6 +748,15 @@
 
         <h3 style="margin-top: 24px; margin-bottom: 12px;">Projetos Cadastrados (<span id="admin-count">0</span>)</h3>
         <div id="admin-projects-list"></div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 12px;">Limpar Votos de Avaliador</h3>
+        <div class="admin-form">
+            <div class="input-group">
+                <label>Nome do avaliador (exato)</label>
+                <input type="text" id="clear-evaluator-name" placeholder="Nome do avaliador...">
+            </div>
+            <button class="btn btn-danger" style="width:100%; padding:14px;" onclick="clearEvaluatorVotes()">Limpar Votos</button>
+        </div>
     </div>
 
     <!-- Toast -->
@@ -1161,6 +1170,25 @@
         }
 
         // ============ UTILS ============
+        async function clearEvaluatorVotes() {
+            const name = document.getElementById('clear-evaluator-name').value.trim();
+            if (!name) {
+                showToast("Digite o nome do avaliador");
+                return;
+            }
+            if (!confirm(`Tem certeza que deseja limpar TODOS os votos de "${name}"?`)) return;
+
+            await loadCloud();
+            if (cloudData.evaluations && cloudData.evaluations[name]) {
+                delete cloudData.evaluations[name];
+                await saveCloud();
+                document.getElementById('clear-evaluator-name').value = '';
+                showToast(`Votos de "${name}" removidos com sucesso`);
+            } else {
+                showToast(`Avaliador "${name}" não encontrado`);
+            }
+        }
+
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
