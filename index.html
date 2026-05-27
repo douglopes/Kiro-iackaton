@@ -730,6 +730,9 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ============ CONFIG ============
+        const BLOB_API = 'https://jsonblob.com/api/jsonBlob';
+
         // ============ CRITERIA ============
         const CRITERIA = [
             { id: "impacto", name: "Impacto no negócio", weight: 0.30 },
@@ -744,31 +747,60 @@
         let currentProjectId = null;
         let evaluations = {};
         let currentScores = {};
+        let blobId = null;
+        let cloudData = { projects: [], evaluations: {} };
 
-        // ============ PROJECTS STORAGE (shared) ============
-        function getProjects() {
-            const raw = localStorage.getItem('kiro_hackathon_projects');
-            return raw ? JSON.parse(raw) : [];
-        }
-
-        function saveProjects(projects) {
-            localStorage.setItem('kiro_hackathon_projects', JSON.stringify(projects));
-        }
-
-        // ============ PERSISTENCE (per evaluator) ============
-        function saveData() {
-            const data = { evaluations };
-            localStorage.setItem(`kiro_hackathon_eval_${currentUser}`, JSON.stringify(data));
-        }
-
-        function loadData() {
-            const raw = localStorage.getItem(`kiro_hackathon_eval_${currentUser}`);
-            if (raw) {
-                const data = JSON.parse(raw);
-                evaluations = data.evaluations || {};
-            } else {
-                evaluations = {};
+        // ============ CLOUD SYNC (jsonblob.com) ============
+        async function createBlob() {
+            const res = await fetch(BLOB_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ projects: [], evaluations: {} })
+            });
+            const location = res.headers.get('Location') || res.headers.get('location');
+            if (location) {
+                return location.split('/').pop();
             }
+            const data = await res.json();
+            return null;
+        }
+
+        async function loadCloud() {
+            if (!blobId) return;
+            try {
+                const res = await fetch(`${BLOB_API}/${blobId}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok) {
+                    cloudData = await res.json();
+                    if (!cloudData.projects) cloudData.projects = [];
+                    if (!cloudData.evaluations) cloudData.evaluations = {};
+                }
+            } catch (e) {
+                console.error('Erro ao carregar dados:', e);
+            }
+        }
+
+        async function saveCloud() {
+            if (!blobId) return;
+            try {
+                await fetch(`${BLOB_API}/${blobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(cloudData)
+                });
+            } catch (e) {
+                console.error('Erro ao salvar dados:', e);
+                showToast("Erro ao sincronizar. Tente novamente.");
+            }
+        }
+
+        function getProjects() {
+            return cloudData.projects || [];
+        }
+
+        function getMyEvaluations() {
+            return (cloudData.evaluations && cloudData.evaluations[currentUser]) || {};
         }
 
         // ============ NAVIGATION ============
@@ -783,7 +815,7 @@
         }
 
         // ============ LOGIN ============
-        function login() {
+        async function login() {
             const name = document.getElementById('evaluator-name').value.trim();
             if (!name) {
                 showToast("Por favor, digite seu nome");
@@ -791,7 +823,24 @@
             }
             currentUser = name;
             document.getElementById('header-username').textContent = name;
-            loadData();
+
+            // Check if blob exists in URL hash
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                blobId = hash;
+            } else {
+                // Create new blob
+                showToast("Criando sessão...");
+                blobId = await createBlob();
+                if (blobId) {
+                    window.location.hash = blobId;
+                } else {
+                    showToast("Erro ao criar sessão. Usando modo local.");
+                }
+            }
+
+            await loadCloud();
+            evaluations = getMyEvaluations();
             showScreen('screen-projects');
             renderProjectsList('all');
         }
@@ -923,7 +972,7 @@
             document.getElementById('final-score-value').textContent = score.toFixed(1);
         }
 
-        function submitEvaluation() {
+        async function submitEvaluation() {
             const allScored = CRITERIA.every(c => currentScores[c.id]);
             if (!allScored) {
                 showToast("Avalie todos os critérios antes de salvar");
@@ -931,27 +980,43 @@
             }
 
             evaluations[currentProjectId] = { ...currentScores };
-            saveData();
-            showToast("Avaliação salva com sucesso! ✓");
 
-            setTimeout(() => {
-                goBack();
-            }, 1000);
+            // Save to cloud
+            await loadCloud(); // refresh first to avoid overwriting others
+            if (!cloudData.evaluations) cloudData.evaluations = {};
+            cloudData.evaluations[currentUser] = evaluations;
+            await saveCloud();
+
+            showToast("Avaliação salva com sucesso! ✓");
+            setTimeout(() => { goBack(); }, 1000);
         }
 
         // ============ RANKING ============
-        function showRanking() {
+        async function showRanking() {
+            await loadCloud(); // get latest evaluations from all users
             const container = document.getElementById('ranking-list');
             container.innerHTML = '';
             const PROJECTS = getProjects();
+            const allEvals = cloudData.evaluations || {};
 
-            const ranked = PROJECTS
-                .filter(p => evaluations[p.id])
-                .map(p => ({
+            // Calculate average scores across all evaluators
+            const ranked = PROJECTS.map(p => {
+                let totalScore = 0;
+                let evalCount = 0;
+                Object.values(allEvals).forEach(userEvals => {
+                    if (userEvals[p.id]) {
+                        totalScore += calculateWeightedScore(userEvals[p.id]);
+                        evalCount++;
+                    }
+                });
+                return {
                     ...p,
-                    score: calculateWeightedScore(evaluations[p.id])
-                }))
-                .sort((a, b) => b.score - a.score);
+                    score: evalCount > 0 ? totalScore / evalCount : 0,
+                    evalCount
+                };
+            })
+            .filter(p => p.evalCount > 0)
+            .sort((a, b) => b.score - a.score);
 
             ranked.forEach((project, index) => {
                 const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
@@ -961,7 +1026,7 @@
                     <div class="summary-rank ${rankClass}">${index + 1}°</div>
                     <div class="summary-info">
                         <h4>${escHtml(project.title)}</h4>
-                        <span>${escHtml(project.participant)}</span>
+                        <span>${escHtml(project.participant)} · ${project.evalCount} voto(s)</span>
                     </div>
                     <div class="summary-score">${project.score.toFixed(1)}</div>
                 `;
@@ -972,7 +1037,7 @@
         }
 
         // ============ ADMIN - CADASTRO ============
-        function createProject() {
+        async function createProject() {
             const title = document.getElementById('project-title').value.trim();
             const participant = document.getElementById('project-participant').value.trim();
             const description = document.getElementById('project-description').value.trim();
@@ -982,10 +1047,12 @@
                 return;
             }
 
-            const projects = getProjects();
+            await loadCloud(); // refresh
+            const projects = cloudData.projects || [];
             const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
             projects.push({ id: newId, title, description, participant });
-            saveProjects(projects);
+            cloudData.projects = projects;
+            await saveCloud();
 
             document.getElementById('project-title').value = '';
             document.getElementById('project-participant').value = '';
@@ -995,11 +1062,11 @@
             renderAdminProjects();
         }
 
-        function deleteProject(id) {
+        async function deleteProject(id) {
             if (!confirm("Excluir este projeto?")) return;
-            let projects = getProjects();
-            projects = projects.filter(p => p.id !== id);
-            saveProjects(projects);
+            await loadCloud();
+            cloudData.projects = (cloudData.projects || []).filter(p => p.id !== id);
+            await saveCloud();
             showToast("Projeto excluído");
             renderAdminProjects();
         }
@@ -1042,6 +1109,15 @@
             div.textContent = str;
             return div.innerHTML;
         }
+
+        // ============ INIT ============
+        // Check if returning with a blob ID
+        (function() {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                blobId = hash;
+            }
+        })();
     </script>
 </body>
 </html>
