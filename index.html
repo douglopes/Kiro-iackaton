@@ -755,7 +755,7 @@
 
     <script>
         // ============ CONFIG ============
-        const DEFAULT_BIN_ID = 'df57f172f003400cf250';
+        const DEFAULT_BIN_ID = '019e69f1-afa7-726c-adba-9bad38f69eb0';
         const ADMIN_PASSWORD = 'kiro2026'; // Altere esta senha!
 
         // ============ CRITERIA ============
@@ -802,7 +802,9 @@
         async function loadCloud() {
             if (!blobId) return false;
             try {
-                const res = await fetch(`https://api.npoint.io/${blobId}`);
+                const res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
                 if (res.ok) {
                     cloudData = await res.json();
                     if (!cloudData.projects) cloudData.projects = [];
@@ -822,9 +824,9 @@
                 return;
             }
             try {
-                await fetch(`https://api.npoint.io/${blobId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(cloudData)
                 });
             } catch (e) {
