@@ -1,28 +1,15 @@
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
+const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Database setup (SQLite - persiste em arquivo)
-const db = new Database(path.join(__dirname, 'data.db'));
-db.pragma('journal_mode = WAL');
-
-// Create table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS app_data (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    data TEXT NOT NULL DEFAULT '{"projects":[],"evaluations":{}}'
-  )
-`);
-
-// Insert default row if not exists
-const row = db.prepare('SELECT * FROM app_data WHERE id = 1').get();
-if (!row) {
-  db.prepare('INSERT INTO app_data (id, data) VALUES (1, ?)').run(JSON.stringify({ projects: [], evaluations: {} }));
-}
+// Supabase setup
+const supabaseUrl = 'https://kqjnogxwanwzfcvhirlc.supabase.co';
+const supabaseKey = 'sb_publishable_UZGBN8_lYk90Ig-ekOeK2w_18Nfkg-t';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
 app.use(cors());
@@ -32,15 +19,33 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // API: Get all data
-app.get('/api/data', (req, res) => {
-  const row = db.prepare('SELECT data FROM app_data WHERE id = 1').get();
-  res.json(JSON.parse(row.data));
+app.get('/api/data', async (req, res) => {
+  const { data, error } = await supabase
+    .from('app_data')
+    .select('data')
+    .eq('id', 1)
+    .single();
+
+  if (error) {
+    console.error('Supabase read error:', error);
+    return res.status(500).json({ error: 'Failed to read data' });
+  }
+
+  res.json(data.data);
 });
 
 // API: Update all data
-app.put('/api/data', (req, res) => {
-  const data = JSON.stringify(req.body);
-  db.prepare('UPDATE app_data SET data = ? WHERE id = 1').run(data);
+app.put('/api/data', async (req, res) => {
+  const { error } = await supabase
+    .from('app_data')
+    .update({ data: req.body })
+    .eq('id', 1);
+
+  if (error) {
+    console.error('Supabase write error:', error);
+    return res.status(500).json({ error: 'Failed to write data' });
+  }
+
   res.json({ success: true });
 });
 
