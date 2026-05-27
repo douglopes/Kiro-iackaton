@@ -823,7 +823,7 @@
             }
             try {
                 await fetch(`https://api.npoint.io/${blobId}`, {
-                    method: 'PATCH',
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
                 });
